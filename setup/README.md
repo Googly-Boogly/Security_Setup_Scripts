@@ -11,7 +11,8 @@ sudo ./setup/bootstrap.sh                      # apply (safe to re-run)
 sudo ./setup/verification/security_report.sh   # verify
 ```
 
-Topic-by-topic documentation lives in [`../docs/`](../docs/README.md).
+Topic-by-topic documentation lives in [`../docs/`](../docs/README.md); for a first
+install on a new machine, follow [`../docs/getting-started.md`](../docs/getting-started.md).
 
 The goal is *secure enough to be useful, simple enough to maintain*. It
 reduces common risks; it does not make a machine "secure", and nothing here

@@ -1,5 +1,7 @@
 # Installation and dry-run
 
+First time on a new machine? Follow [Getting started](getting-started.md).
+
 Preview first, then apply. A second run mostly reports `Already configured`,
 because files are compared before writing and installed packages are skipped.
 

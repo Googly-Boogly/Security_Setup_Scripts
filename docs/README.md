@@ -20,6 +20,7 @@ sudo ./setup/verification/security_report.sh   # verify
 
 | Page | Covers |
 | --- | --- |
+| [Getting started](getting-started.md) | Step-by-step first install on a fresh Ubuntu machine, through to running an agent |
 | [Threat model](threat-model.md) | What the system protects against, what it does not, and its assumptions |
 | [Installation and dry-run](installation.md) | Install steps, bootstrap options, dry-run, logs |
 | [Configuration](configuration.md) | `workstation.conf`, local overrides, every toggle and default |
