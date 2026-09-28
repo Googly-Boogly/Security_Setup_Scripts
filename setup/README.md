@@ -11,6 +11,8 @@ sudo ./setup/bootstrap.sh                      # apply (safe to re-run)
 sudo ./setup/verification/security_report.sh   # verify
 ```
 
+Topic-by-topic documentation lives in [`../docs/`](../docs/README.md).
+
 The goal is *secure enough to be useful, simple enough to maintain*. It
 reduces common risks; it does not make a machine "secure", and nothing here
 should be read as a guarantee.
@@ -161,6 +163,7 @@ ENABLE_GIT=true               ENABLE_CONTAINERS=true       CONTAINER_RUNTIME=bot
 ENABLE_KUBERNETES=false       ENABLE_TERRAFORM=false       ENABLE_AUDITD=true
 ENABLE_AIDE=true              ENABLE_CONTAINER_SCANNING=true ENABLE_SECRETS_SCANNING=true
 ENABLE_SURICATA=false         ENABLE_MALWARE_SCANNING=false ENABLE_WAZUH_AGENT=false
+ENABLE_LOG_MANAGEMENT=true    ENABLE_REMOTE_LOGGING=false  ENABLE_FAIL2BAN=false
 ENABLE_AGENT_SANDBOX=true
 AGENT_DEFAULT_NETWORK=offline AGENT_MAX_MEMORY=2g AGENT_MAX_CPUS=2 AGENT_MAX_PIDS=256 AGENT_TIMEOUT=1800
 ```
@@ -181,7 +184,7 @@ flowchart TD
 
     OSHardening --> Updates[updates] & SSH[ssh] & Firewall[firewall] & Sysctl[sysctl] & AppArmor[apparmor] & Services[services] & Perms[permissions]
     Development --> Python[python] & Node[node] & Git[git] & Containers[containers] & K8s[kubernetes*] & TF[terraform*]
-    Security --> Auditd[auditd] & Trivy[container_scanning] & Gitleaks[secrets_scanning] & Malware[malware_scanning*] & Suricata[suricata*] & Wazuh[wazuh_agent*] & AIDE[aide]
+    Security --> Auditd[auditd] & Trivy[container_scanning] & Gitleaks[secrets_scanning] & Malware[malware_scanning*] & Suricata[suricata*] & Wazuh[wazuh_agent*] & Logs[log_management] & AIDE[aide]
 
     AgentRuntime --> Limits[resource_limits] & Workspaces[create_workspace] & NetPolicy[network_policy]
     AgentRuntime --> Runner[agent_runner.sh]
@@ -272,6 +275,7 @@ agents, or use rootless Docker (`dockerd-rootless-setuptool.sh install`).
 | `malware_scanning.sh` | `scan PATH` · `rootkit` | *Optional.* ClamAV (on demand; no ~1 GB `clamd` daemon) and rkhunter with `APT_AUTOGEN` to cut false positives after upgrades. **Limitations:** signature-based, finds known commodity malware only, and rkhunter warns often after legitimate changes. A clean result proves nothing |
 | `suricata.sh` | `sudo tail -f /var/log/suricata/fast.log` | *Optional.* Passive af-packet IDS (never inline/IPS) on the interface of the default route (not assumed to be `eth0`). Virtual interfaces are refused. Rules come from ET Open via a daily timer, and the config is tested (`suricata -T`) before starting. Re-run the module when switching between Wi-Fi and Ethernet |
 | `wazuh_agent.sh` | — | *Optional.* Agent only, enrolled to an **existing** manager (`WAZUH_MANAGER`, TCP 1514/1515). The manager/indexer/dashboard stack needs several GB of RAM and belongs on a server. Keep agent version ≤ manager version (`apt-mark hold wazuh-agent`) |
+| `log_management.sh` | `review [DAYS]` · `setup-sealing` · `verify` | logrotate policy for bootstrap logs and reports (plus Suricata if enabled); persistent, compressed, size-capped journald; auditd rotates at 50 MB × 10 files. The agent runner also copies its events to the journal, which your user cannot rewrite. *Optional:* forward-secure journal sealing (the verification key is shown once, store it offline); rsyslog forwarding of syslog and audit events over TLS with a disk-backed queue, the only control that survives an attacker with root; fail2ban for SSH. `review` prints counts (failed logins, sudo, UFW blocks, audit keys, agent sessions), never message bodies |
 
 Repository signing keys are downloaded over HTTPS and checked against pinned
 fingerprints where the config provides one (Docker, HashiCorp, Wazuh). For the
@@ -429,6 +433,7 @@ The checks cover:
 - running containers that are privileged, mount the socket, or use host network/PID
 - agent containers missing a read-only root, `cap-drop ALL`, `no-new-privileges`, or memory/PID limits
 - the agent slice, Podman subuids and workspace permissions
+- log rotation, persistent and sealed journal, auditd rotation, sensitive log permissions, remote forwarding and fail2ban
 
 Reports are saved to `/var/log/ai-workstation-bootstrap/security-report-*.txt`.
 Statuses are PASS / WARN / FAIL / INFO. A report full of PASS means
@@ -455,7 +460,7 @@ What rollback does:
 - restores backed-up files and moves aside files this project created (copies are kept in `/var/backups/ai-workstation/rollback-<id>/`)
 - restores file modes, sysctl runtime values, disabled services, docker group membership and git settings
 - offers to disable UFW if it was inactive before
-- reloads what it touched (systemd, UFW, sshd after `sshd -t`, audit rules)
+- reloads what it touched (systemd, UFW, sshd after `sshd -t`, audit rules and auditd, journald, rsyslog after `rsyslogd -N1`, fail2ban)
 
 It **never removes packages or reverts OS updates**. Other software may depend
 on them. `--list` shows what was installed so you can decide.
@@ -517,7 +522,7 @@ setup/
 │                                permissions_policy, agent
 ├── hardening/                   updates, ssh, firewall, sysctl (+ files/), apparmor, services, permissions
 ├── development/                 python, node, git, containers, kubernetes, terraform
-├── security/                    auditd, aide, container_scanning, secrets_scanning,
+├── security/                    auditd, aide, container_scanning, secrets_scanning, log_management,
 │                                malware_scanning, suricata, wazuh_agent (+ files/)
 ├── agents/                      agent_runner, create_workspace, network_policy, resource_limits,
 │                                image/Dockerfile, policies/ (squid.conf, allowlist), tools/agent_audit.py

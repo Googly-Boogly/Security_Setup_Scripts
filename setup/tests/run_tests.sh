@@ -1,4 +1,5 @@
 #!/usr/bin/env bash
+# shellcheck disable=SC2031  # subshells re-source common.sh, which re-sets SETUP_ROOT to the same value
 # Safe tests: syntax checks, ShellCheck (if installed) and unit tests of the
 # pure helper functions. Needs no root and changes nothing on the system.
 #
@@ -115,6 +116,11 @@ test_kv() {
   assert_eq 'IPV6=yes' "$(render_kv "$f" IPV6 yes | head -n1)" "render_kv replaces"
   assert_eq 3 "$(render_kv "$f" IPV6 yes | wc -l)" "render_kv keeps other lines"
   assert_eq 'NEW=1' "$(render_kv "$f" NEW 1 | tail -n1)" "render_kv appends"
+  local a="$TMP/auditd.conf"
+  printf 'log_file = /var/log/audit/audit.log\nmax_log_file = 8\n# num_logs = 3\n' >"$a"
+  assert_eq 'max_log_file = 50' "$(render_kv "$a" max_log_file 50 ' = ' | sed -n 2p)" "render_kv spaced replace"
+  assert_eq 'num_logs = 10' "$(render_kv "$a" num_logs 10 ' = ' | tail -n1)" "render_kv ignores commented key"
+  assert_eq 1 "$(render_kv "$a" max_log_file 50 ' = ' | grep -c '^max_log_file')" "render_kv no duplicate"
 }
 
 test_sysctl_parse() {
@@ -164,6 +170,31 @@ test_allowlist() {
   if ((rc == 0)); then ok; else fail "render_allowlist (exit $rc)"; fi
 }
 
+test_log_management() {
+  # logrotate syntax (the `su` line needs root, so check a copy without it).
+  if command -v logrotate >/dev/null 2>&1; then
+    grep -v '^[[:space:]]*su ' "$SETUP_ROOT/security/files/logrotate-ai-workstation" >"$TMP/logrotate.conf"
+    if logrotate --debug --state "$TMP/logrotate.state" "$TMP/logrotate.conf" >/dev/null 2>&1; then ok
+    else fail "logrotate policy does not parse"; fi
+  fi
+  local out
+  out="$(
+    # shellcheck source=../security/log_management.sh
+    source "$SETUP_ROOT/security/log_management.sh"
+    render_rsyslog_forward logs.example.com 6514 true /etc/ssl/ca.pem
+  )"
+  assert_true grep -q 'StreamDriverMode="1"' <<<"$out"
+  assert_true grep -q 'StreamDriverPermittedPeers="logs.example.com"' <<<"$out"
+  assert_true grep -q 'queue.saveOnShutdown="on"' <<<"$out"
+  out="$(
+    # shellcheck source=../security/log_management.sh
+    source "$SETUP_ROOT/security/log_management.sh"
+    render_rsyslog_forward logs.example.com 514 false ""
+  )"
+  assert_false grep -q 'gtls' <<<"$out"
+  assert_true grep -q 'WARNING: plaintext' <<<"$out"
+}
+
 test_python_audit() {
   command -v python3 >/dev/null 2>&1 || return 0
   local log="$TMP/events.jsonl"
@@ -190,6 +221,7 @@ main() {
   test_redaction
   test_json_escape
   test_allowlist
+  test_log_management
   test_python_audit
   printf '\n%d passed, %d failed\n' "$PASSED" "$FAILED"
   ((FAILED == 0))

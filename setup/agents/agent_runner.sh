@@ -66,11 +66,18 @@ audit_event() {
   for n in "${ENV_NAMES[@]}"; do envs+="${envs:+,}\"$(json_escape "$n")\""; done
   local secrets="" s
   for s in "${SECRET_NAMES[@]}"; do secrets+="${secrets:+,}\"$(json_escape "$s")\""; done
-  printf '{"timestamp":"%s","agent_id":"%s","session_id":"%s","tool":"agent_runner","action":"%s","target":"%s","result":"%s","exit_code":%s,"duration_s":%s,"user":"%s","runtime":"%s","image":"%s","network":"%s","limits":{"memory":"%s","cpus":"%s","pids":%s,"timeout_s":%s},"env_names":[%s],"secret_names":[%s],"container":"%s"}\n' \
+  local line
+  printf -v line '{"timestamp":"%s","agent_id":"%s","session_id":"%s","tool":"agent_runner","action":"%s","target":"%s","result":"%s","exit_code":%s,"duration_s":%s,"user":"%s","runtime":"%s","image":"%s","network":"%s","limits":{"memory":"%s","cpus":"%s","pids":%s,"timeout_s":%s},"env_names":[%s],"secret_names":[%s],"container":"%s"}' \
     "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(json_escape "$AGENT_ID")" "$(json_escape "$SESSION_ID")" \
     "$(json_escape "$action")" "$(json_escape "$WORKSPACE")" "$(json_escape "$result")" \
     "$exit_code" "$duration" "$(json_escape "$(id -un)")" "$RT" "$(json_escape "$IMAGE")" "$NETWORK" \
-    "$MEMORY" "$CPUS" "$PIDS" "$TIMEOUT" "$envs" "$secrets" "$CONTAINER_NAME" >>"$AUDIT_LOG"
+    "$MEMORY" "$CPUS" "$PIDS" "$TIMEOUT" "$envs" "$secrets" "$CONTAINER_NAME"
+  printf '%s\n' "$line" >>"$AUDIT_LOG"
+  # The journal copy is root-owned: a process running as you can add
+  # entries but cannot rewrite or delete this history.
+  if [[ "${AGENT_LOG_TO_JOURNAL:-true}" == "true" ]] && command_exists logger; then
+    logger -t ai-agent-runner -p user.notice -- "$line" 2>/dev/null || true
+  fi
 }
 
 cleanup() {

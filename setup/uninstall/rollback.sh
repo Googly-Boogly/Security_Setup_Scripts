@@ -114,6 +114,13 @@ reload_affected() {
     else log_error "Restored sshd configuration is invalid; check /etc/ssh before reconnecting"; fi
   fi
   [[ "$joined" == *" /etc/audit/"* ]] && command_exists augenrules && run_cmd augenrules --load
+  [[ "$joined" == *" /etc/audit/"* ]] && { run_cmd systemctl reload auditd.service || true; }
+  [[ "$joined" == *" /etc/systemd/journald.conf.d/"* ]] && run_cmd systemctl restart systemd-journald.service
+  if [[ "$joined" == *" /etc/rsyslog.d/"* ]] && command_exists rsyslogd; then
+    if rsyslogd -N1 >/dev/null 2>&1; then run_cmd systemctl restart rsyslog.service
+    else log_error "Restored rsyslog configuration is invalid; check /etc/rsyslog.d"; fi
+  fi
+  [[ "$joined" == *" /etc/fail2ban/"* ]] && unit_exists fail2ban.service && { run_cmd systemctl restart fail2ban.service || true; }
   [[ "$joined" == *" /etc/docker/daemon.json "* ]] && log_warn "Restart Docker to apply the restored daemon.json: sudo systemctl restart docker"
   for p in "${RESTORED_PATHS[@]}"; do
     [[ "$p" == /etc/sysctl.d/* ]] && log_info "Sysctl file changed; runtime values were restored from records where available"

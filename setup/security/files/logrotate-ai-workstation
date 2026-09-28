@@ -1,0 +1,16 @@
+# Managed by ai-workstation setup (setup/security/log_management.sh).
+# Source of truth: setup/security/files/logrotate-ai-workstation
+#
+# Bootstrap logs and security reports are written once per run, so they
+# are compressed after a month and deleted after a year rather than grown.
+/var/log/ai-workstation-bootstrap/*.log /var/log/ai-workstation-bootstrap/*.txt {
+    monthly
+    rotate 12
+    maxage 365
+    compress
+    delaycompress
+    missingok
+    notifempty
+    nocreate
+    su root root
+}

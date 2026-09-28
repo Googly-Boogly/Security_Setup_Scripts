@@ -339,11 +339,12 @@ ensure_managed_block() {
   render_managed_block "$file" "$id" | install_managed_file "$file" "$mode" "$owner"
 }
 
-# Set KEY=VALUE in a shell-style config file (e.g. /etc/default/ufw).
+# Set KEY=VALUE in a config file (e.g. /etc/default/ufw). An optional
+# separator handles "key = value" formats such as auditd.conf.
 ensure_kv() {
-  local file="$1" key="$2" value="$3" mode="0644"
+  local file="$1" key="$2" value="$3" sep="${4:-=}" mode="0644"
   [[ -f "$file" ]] && mode="$(stat -c '%a' "$file")"
-  render_kv "$file" "$key" "$value" | install_managed_file "$file" "$mode"
+  render_kv "$file" "$key" "$value" "$sep" | install_managed_file "$file" "$mode"
 }
 
 # ---------------------------------------------------------------------------

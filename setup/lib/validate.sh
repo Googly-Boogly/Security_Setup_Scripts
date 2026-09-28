@@ -125,13 +125,17 @@ render_managed_block() {
       }'
 }
 
-# Set KEY=VALUE in shell-style config content, replacing an existing
-# uncommented assignment or appending one. Usage: render_kv <file> <key> <value>
+# Set a key in "KEY=VALUE" style config content (or "key = value" with a
+# custom separator, e.g. auditd.conf), replacing the first uncommented
+# assignment or appending one. Usage: render_kv <file> <key> <value> [sep]
 render_kv() {
-  local file="$1" key="$2" value="$3"
+  local file="$1" key="$2" value="$3" sep="${4:-=}"
   { [[ -f "$file" ]] && cat -- "$file"; true; } |
-    AIWS_K="$key" AIWS_V="$value" awk '
-      index($0, ENVIRON["AIWS_K"] "=") == 1 && !done { print ENVIRON["AIWS_K"] "=" ENVIRON["AIWS_V"]; done = 1; next }
+    AIWS_K="$key" AIWS_V="$value" AIWS_S="$sep" awk '
+      /=/ && !done {
+        k = $0; sub(/[[:space:]]*=.*/, "", k); sub(/^[[:space:]]+/, "", k)
+        if (k == ENVIRON["AIWS_K"]) { print ENVIRON["AIWS_K"] ENVIRON["AIWS_S"] ENVIRON["AIWS_V"]; done = 1; next }
+      }
       { print }
-      END { if (!done) print ENVIRON["AIWS_K"] "=" ENVIRON["AIWS_V"] }'
+      END { if (!done) print ENVIRON["AIWS_K"] ENVIRON["AIWS_S"] ENVIRON["AIWS_V"] }'
 }

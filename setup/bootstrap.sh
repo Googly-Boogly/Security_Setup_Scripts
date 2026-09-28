@@ -34,6 +34,7 @@ MODULES=(
   "security/malware_scanning.sh:ENABLE_MALWARE_SCANNING"
   "security/suricata.sh:ENABLE_SURICATA"
   "security/wazuh_agent.sh:ENABLE_WAZUH_AGENT"
+  "security/log_management.sh:ENABLE_LOG_MANAGEMENT"
   "agents/resource_limits.sh:ENABLE_AGENT_SANDBOX"
   "agents/create_workspace.sh:ENABLE_AGENT_SANDBOX"
   "agents/network_policy.sh:ENABLE_AGENT_SANDBOX"

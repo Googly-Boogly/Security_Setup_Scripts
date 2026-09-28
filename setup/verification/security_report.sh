@@ -12,7 +12,7 @@ source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
 # shellcheck source=../lib/report.sh
 source "$SETUP_ROOT/lib/report.sh"
 
-CHECKS=(check_firewall check_services check_sysctl check_permissions check_containers)
+CHECKS=(check_firewall check_services check_sysctl check_permissions check_containers check_logging)
 
 main() {
   parse_common_args "$@"
@@ -43,6 +43,7 @@ main() {
   run_sysctl_checks
   run_permissions_checks
   run_containers_checks
+  run_logging_checks
 
   report_summary
   echo "This report checks configuration only. Passing checks reduce risk; they do not make a system secure."
