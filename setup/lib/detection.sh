@@ -92,4 +92,12 @@ sysctl_value() {
   sysctl -n "$1" 2>/dev/null
 }
 
+# Hostnames of the configured apt repositories (deb822 .sources and
+# one-line .list files), commented lines ignored.
+apt_repo_hosts() {
+  local files=(/etc/apt/sources.list /etc/apt/sources.list.d/*.list /etc/apt/sources.list.d/*.sources)
+  { grep -hvsE '^[[:space:]]*#' "${files[@]}" || true; } |
+    grep -oE 'https?://[^/ "]+' | sed -E 's#^https?://##; s#:[0-9]+$##' | sort -u
+}
+
 cgroup_v2_enabled() { [[ "$(stat -fc %T /sys/fs/cgroup 2>/dev/null)" == "cgroup2fs" ]]; }

@@ -20,6 +20,7 @@ the damage without preventing it.
 
 | Symptom | Fix |
 | --- | --- |
+| `Cannot resolve ... no working DNS or network` (or apt `Temporary failure resolving`) | The machine is offline or DNS is broken; nothing was changed. Check `ping -c1 1.1.1.1`, `getent hosts archive.ubuntu.com`, `resolvectl status`. No ping: connect the network. Ping but no DNS: `sudo systemctl restart systemd-resolved`, or set DNS on the connection with `nmcli con mod "<name>" ipv4.dns "1.1.1.1 9.9.9.9" && nmcli con up "<name>"`. Behind a proxy: set `Acquire::http::Proxy` in `/etc/apt/apt.conf.d/95proxy`. Confirm with `sudo apt update`, then re-run |
 | A module failed | Read `/var/log/ai-workstation-bootstrap/bootstrap-<run-id>.log`, fix the cause, re-run; finished steps are skipped |
 | apt cannot use a repository | The vendor has no packages for your release yet; the source file was removed so apt still works |
 | Signing key fingerprint mismatch | Do not bypass it; verify the vendor's key and update the fingerprint in the config |

@@ -101,10 +101,34 @@ preflight() {
   in_ssh_session && log_warn "You are connected over SSH. Firewall and SSH modules include lockout guards; read their prompts carefully."
   is_dry_run && log_dry "DRY RUN: no changes will be made"
 
+  check_network
   # One index refresh for the whole run; modules inherit AIWS_APT_UPDATED.
   apt_update_once
   # Tools the modules themselves rely on.
   ensure_package ca-certificates curl gnupg jq iproute2 lsb-release
+}
+
+# Fail early and clearly when packages cannot be downloaded, instead of
+# deep inside apt. Only the Ubuntu mirrors are checked: a dead third-party
+# PPA should not block the whole bootstrap.
+check_network() {
+  local hosts=() host failed=()
+  mapfile -t hosts < <(apt_repo_hosts | grep -E '(^|\.)ubuntu\.com$' || true)
+  ((${#hosts[@]} > 0)) || hosts=(archive.ubuntu.com security.ubuntu.com)
+  for host in "${hosts[@]}"; do
+    timeout 10 getent hosts "$host" >/dev/null 2>&1 || failed+=("$host")
+  done
+  if ((${#failed[@]} == 0)); then
+    log_ok "Network OK: apt mirrors resolve (${hosts[*]})"
+    return 0
+  fi
+  log_error "Cannot resolve ${failed[*]}: this machine has no working DNS or network connection."
+  log_error "Diagnose: ping -c1 1.1.1.1   |   getent hosts ${failed[0]}   |   resolvectl status"
+  if is_dry_run; then
+    log_warn "Continuing because this is a dry run; a real run would stop here."
+    return 0
+  fi
+  die "Fix networking (confirm with: sudo apt update), then re-run. Nothing has been changed yet."
 }
 
 main() {

@@ -75,6 +75,9 @@ init_module() {
 }
 
 _aiws_on_error() {
+  # A failing `return` only passes on an error that was already reported
+  # (e.g. by run_cmd); logging it again just adds noise.
+  [[ "$3" == return* ]] && return 0
   log_error "Command failed (exit $1) at ${BASH_SOURCE[1]:-?}:$2: $3"
 }
 

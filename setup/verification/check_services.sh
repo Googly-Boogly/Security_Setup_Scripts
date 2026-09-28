@@ -38,8 +38,10 @@ check_auditd() {
       n="$(auditctl -l 2>/dev/null | grep -c 'aiws_' || true)"
       if ((n > 0)); then report_pass "$n ai-workstation audit rules loaded"; else report_warn "ai-workstation audit rules not loaded"; fi
     fi
+  elif is_enabled ENABLE_AUDITD && ! package_installed auditd; then
+    report_fail "auditd is not installed (ENABLE_AUDITD=true): run sudo ./setup/security/auditd.sh"
   elif is_enabled ENABLE_AUDITD; then
-    report_fail "auditd is not running (ENABLE_AUDITD=true)"
+    report_fail "auditd is installed but not running: see systemctl status auditd (containers/WSL cannot run auditd)"
   else
     report_warn "auditd disabled"
   fi
