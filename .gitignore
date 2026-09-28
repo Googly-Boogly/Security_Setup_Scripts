@@ -1,0 +1,28 @@
+# Secrets: never commit real credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+secrets/
+.git-credentials
+.netrc
+
+# Machine-specific configuration overrides
+setup/config/workstation.local.conf
+
+# Runtime artefacts
+*.log
+backups/
+runtime/
+agent-workspaces/
+
+# Python / IDE
+.venv/
+venv/
+__pycache__/
+*.pyc
+.idea/
+.vscode/

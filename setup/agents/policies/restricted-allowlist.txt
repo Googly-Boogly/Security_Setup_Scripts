@@ -1,0 +1,21 @@
+# Domains reachable by agents started with --network restricted.
+#
+# One entry per line. "api.example.com" allows exactly that host;
+# ".example.com" allows the domain and all subdomains.
+# Every entry is somewhere an agent can send data: keep this list short.
+# After editing, the proxy is recreated automatically on the next agent run
+# (or run: ./setup/agents/network_policy.sh reload).
+
+# LLM APIs
+api.anthropic.com
+api.openai.com
+
+# Package registries (remove if agents should not install dependencies)
+pypi.org
+files.pythonhosted.org
+registry.npmjs.org
+
+# Source hosting (uncomment if needed)
+# github.com
+# codeload.github.com
+# .githubusercontent.com
