@@ -120,8 +120,7 @@ configure_auditd_logs() {
     [[ "$FILE_CHANGED" == "true" ]] && changed=true
   done
   if [[ "$changed" == "true" ]]; then
-    # auditd refuses `systemctl restart`; a reload re-reads auditd.conf.
-    run_cmd systemctl reload auditd.service || log_warn "Reload auditd to apply settings: sudo systemctl reload auditd"
+    reload_auditd || log_warn "Reload auditd to apply settings: sudo pkill -HUP -x auditd"
   fi
   return 0
 }
@@ -192,7 +191,7 @@ configure_remote_forwarding() {
     ensure_package audispd-plugins
     if [[ -f "$AUDIT_SYSLOG_PLUGIN" ]]; then
       ensure_kv "$AUDIT_SYSLOG_PLUGIN" active yes " = "
-      [[ "$FILE_CHANGED" == "true" ]] && { run_cmd systemctl reload auditd.service || true; }
+      [[ "$FILE_CHANGED" == "true" ]] && { reload_auditd || true; }
     elif ! is_dry_run; then
       log_warn "Audit syslog plugin not found at $AUDIT_SYSLOG_PLUGIN; audit events stay local"
     fi

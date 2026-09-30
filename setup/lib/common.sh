@@ -460,6 +460,20 @@ ensure_service_enabled() {
   run_cmd systemctl enable --now "$unit"
 }
 
+# Make auditd re-read auditd.conf and its plugin configuration. auditd refuses
+# `systemctl restart`, and newer audit packages (Ubuntu 26.04) ship a unit
+# without ExecReload, so `systemctl reload` fails there; SIGHUP works on all.
+reload_auditd() {
+  local pid
+  if is_dry_run; then log_dry "would reload auditd configuration (SIGHUP)"; return 0; fi
+  pid="$(systemctl show --property=MainPID --value auditd.service 2>/dev/null || true)"
+  if [[ ! "$pid" =~ ^[1-9][0-9]*$ ]]; then
+    log_info "auditd is not running; settings apply when it starts"
+    return 0
+  fi
+  run_cmd kill -HUP "$pid"
+}
+
 # Disable a unit and remember its previous state so rollback can restore it.
 disable_unit() {
   local unit="$1" state

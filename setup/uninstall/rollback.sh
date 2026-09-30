@@ -114,7 +114,7 @@ reload_affected() {
     else log_error "Restored sshd configuration is invalid; check /etc/ssh before reconnecting"; fi
   fi
   [[ "$joined" == *" /etc/audit/"* ]] && command_exists augenrules && run_cmd augenrules --load
-  [[ "$joined" == *" /etc/audit/"* ]] && { run_cmd systemctl reload auditd.service || true; }
+  [[ "$joined" == *" /etc/audit/"* ]] && { reload_auditd || true; }
   [[ "$joined" == *" /etc/systemd/journald.conf.d/"* ]] && run_cmd systemctl restart systemd-journald.service
   if [[ "$joined" == *" /etc/rsyslog.d/"* ]] && command_exists rsyslogd; then
     if rsyslogd -N1 >/dev/null 2>&1; then run_cmd systemctl restart rsyslog.service
